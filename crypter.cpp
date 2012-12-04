@@ -26,10 +26,12 @@ int main (int argc, char** argv) {
 	
 	int ch;
 	int ind;
-	char* pos;
+	const char* pos;
+	long rd;
+	long wr;
 	
 	// Цикл разбора параметров
-	int cur=1; 	// разбор начинается с первого параметра
+	int cur=1; 	
 	int next;
 	int i;
 	while (cur < argc) {
@@ -105,7 +107,7 @@ int main (int argc, char** argv) {
 						break;
 					// Ключ -t
 					case 't':
-						if ((next < argc) && (argv[next][0] != '-')) {	
+						if ((next < argc) && (argv[next][0] != '-')) {	// Есть аргумент ?
 							if (strcmp ("decode", argv[next]) == 0) {
 								decode = true;
 							}
@@ -198,7 +200,7 @@ int main (int argc, char** argv) {
 	
 	// Подготовка файлов
 	if (overwrite) {
-		in = fopen (parv[1], "w+t");
+		in = fopen (parv[1], "r+t");
 		if (!in) {
 			printf ("ERROR: Input/output file %s can't be open", parv[1]);
 			return -1;
@@ -219,7 +221,11 @@ int main (int argc, char** argv) {
 	}
 	
 	// Кодирование/декодирование
-	while ((ch = fgetc(in)) != EOF) {
+	while (true) {
+		wr = ftell (in);
+		ch = fgetc(in);
+		if (ch == EOF) break;
+		
 		pos = strchr(alpha, ch);	// Ищем очередной символ в алфавите
 		if (pos) {
 			// Преобразование символа
@@ -228,14 +234,17 @@ int main (int argc, char** argv) {
 			ch = alpha[ind];
 			// Запись символа в файл
 			if (overwrite) {
-				fseek (in, -1, SEEK_CUR);
+				rd = ftell (in);
+				fseek (in, wr, SEEK_SET);
 				fputc (ch, in);
+				fseek (in, rd, SEEK_SET);
 			}
 			else {
 				fputc (ch, out);
 			}
 		}	
 		else {
+			// Запись символа в файл, если нужно
 			if (! overwrite) {
 				fputc (ch, out);
 			}
